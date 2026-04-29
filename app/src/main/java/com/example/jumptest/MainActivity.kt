@@ -1,6 +1,10 @@
 package com.example.jumptest
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -24,62 +27,80 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.jumptest.ui.theme.JumpTestTheme
-import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
-    val viewmodel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             JumpTestTheme {
-                Content(viewmodel)
+                Content(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun Content(viewmodel: MainViewModel) {
-
-    viewmodel.colorState.observe(this){
-
-    }
+fun Content(viewModel: MainViewModel) {
+    val context = LocalContext.current
+    val color = viewModel.colorState.value
+    val hexCode = viewModel.getColorHex()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(it)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text(text = "RGB Color",)
+
             Box(
                 modifier = Modifier
-                    .size(200.dp)
-                    .background(Color.Black)
+                    .size(150.dp)
+                    .background(color)
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = hexCode,)
 
-            ColorSlider("Red" , "000",{
-                viewmodel.updateRed(it)
-            })
-            ColorSlider("Green", "000", {
-                viewmodel.updateGreen(it)
-            })
-            ColorSlider("Blue" ,"000", {
-                viewmodel.updateBlue(it)
-            })
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(6.dp))
+            ColorSlider(
+                label = "Red",
+                value = viewModel.red.value,
+                onValueChange = { viewModel.updateRed(it) }
+            )
+            ColorSlider(
+                label = "Green",
+                value = viewModel.green.value,
+                onValueChange = { viewModel.updateGreen(it) }
+            )
+            ColorSlider(
+                label = "Blue",
+                value = viewModel.blue.value,
+                onValueChange = { viewModel.updateBlue(it) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {}
+                onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Color", hexCode)
+                    clipboard.setPrimaryClip(clip)
+
+
+                    Toast.makeText(context, hexCode, Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Copy")
             }
@@ -88,32 +109,20 @@ fun Content(viewmodel: MainViewModel) {
 }
 
 @Composable
-fun ColorSlider(color:String , value:String , valueChange: (value: Float) -> Unit = {_ -> }) {
-    //text - text
-    //(Slider)
+fun ColorSlider(label: String, value: Float, onValueChange: (Float) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.Start
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(color)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(value)
+            Text(text = label, fontWeight = FontWeight.SemiBold)
+            Text(text = value.toInt().toString(), fontWeight = FontWeight.Bold)
         }
         Slider(
-            value = 0f,
-            onValueChange = {valueChange(it)},
+            value = value,
+            onValueChange = onValueChange,
             valueRange = 0f..255f,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    JumpTestTheme {
-        Content(viewmodel)
     }
 }
